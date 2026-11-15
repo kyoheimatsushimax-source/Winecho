@@ -1,6 +1,6 @@
 // ワイン帖 Service Worker
 // 更新を配るときは CACHE の番号を上げる
-const CACHE = 'winecho-v1';
+const CACHE = 'winecho-v2';
 const FILES = ['./', 'index.html', 'manifest.json', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png', 'apple-touch-icon.png'];
 
 self.addEventListener('install', e => {
