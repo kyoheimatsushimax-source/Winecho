@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ワイン帖</title>
+<meta name="theme-color" content="#6E1A35">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ワイン帖">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="icon-192.png">
+<style>
+:root{
+  --paper:#F2ECEF; --card:#FFFFFF; --ink:#2A1620; --sub:#7A6570; --line:#DDD0D6;
+  --wine:#6E1A35; --wine2:#9C3553; --gold:#B08A2E; --leaf:#4F6B3A; --pale:#EADCE2;
+  --ok:#3F6B45; --ng:#A8323A;
+  --mincho:"Hiragino Mincho ProN","Yu Mincho","Noto Serif JP",serif;
+  --sans:"Hiragino Sans","Hiragino Kaku Gothic ProN","Yu Gothic","Noto Sans JP",sans-serif;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.75;-webkit-text-size-adjust:100%}
+h1,h2,h3{font-family:var(--mincho);font-weight:600;margin:0;line-height:1.4}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--wine);outline-offset:2px}
+#app{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 14px) 16px calc(env(safe-area-inset-bottom) + 86px)}
+.top{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:10px}
+.top h1{font-size:26px;letter-spacing:.08em}
+.top .lv{font-size:12px;color:var(--sub)}
+.muted{color:var(--sub);font-size:13px}
+/* tab bar */
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--wine);padding:6px 8px calc(env(safe-area-inset-bottom) + 6px);display:flex;justify-content:center;z-index:5}
+nav div{display:flex;width:100%;max-width:560px}
+nav button{flex:1;color:#E9CFD8;font-size:11px;padding:6px 0;border-radius:10px;line-height:1.3}
+nav button svg{display:block;margin:0 auto 2px;width:24px;height:24px;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:#fff;background:rgba(255,255,255,.14)}
+/* hero bunch */
+.hero{background:var(--card);border-radius:18px;padding:16px;display:flex;gap:10px;align-items:center;margin-bottom:14px}
+.hero svg{flex:0 0 150px;height:168px}
+.hero h2{font-size:17px}
+.hero .big{font-family:var(--mincho);font-size:30px;line-height:1.1;margin:4px 0}
+.hero .big small{font-size:14px;color:var(--sub)}
+.berry{fill:var(--pale);stroke:var(--wine);stroke-width:1;cursor:pointer}
+.berry.done{fill:var(--wine)}
+.berry.next{fill:#fff;stroke-width:2.2}
+.btn{display:inline-block;background:var(--wine);color:#fff;border-radius:999px;padding:10px 20px;font-weight:600;font-size:14px}
+.btn.ghost{background:none;color:var(--wine);border:1.5px solid var(--wine)}
+.btn.wide{display:block;width:100%;text-align:center;padding:13px}
+.btn:disabled{opacity:.4}
+.daily{display:flex;align-items:center;justify-content:space-between;gap:10px;background:var(--wine);color:#fff;border-radius:14px;padding:12px 16px;margin-bottom:18px}
+.daily b{font-family:var(--mincho);font-size:16px}
+.daily .btn{background:#fff;color:var(--wine);flex:none}
+.daily p{margin:0;font-size:12px;opacity:.85}
+/* chapters */
+.ch{margin-bottom:20px}
+.ch h3{font-size:17px;border-bottom:1px solid var(--line);padding-bottom:6px;margin-bottom:4px;display:flex;justify-content:space-between;align-items:baseline}
+.ch h3 span{font-family:var(--sans);font-size:12px;color:var(--sub);font-weight:400}
+.ch>p{margin:4px 0 6px}
+.ls{display:flex;align-items:center;gap:12px;width:100%;text-align:left;padding:10px 4px;border-bottom:1px dashed var(--line)}
+.ls i{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--wine);background:var(--pale)}
+.ls.done i{background:var(--wine)}
+.ls.next i{background:#fff;border-width:3px}
+.ls b{font-weight:600;display:block;line-height:1.4}
+.ls small{color:var(--sub);font-size:12px}
+.ls em{margin-left:auto;font-style:normal;font-size:12px;color:var(--gold);flex:none}
+/* sheet */
+#sheet{position:fixed;inset:0;background:var(--paper);z-index:10;display:none;overflow-y:auto;-webkit-overflow-scrolling:touch}
+#sheet.on{display:block}
+.sh{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top) + 12px) 18px calc(env(safe-area-inset-bottom) + 28px);min-height:100%}
+.shtop{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.shtop .x{font-size:15px;color:var(--wine);padding:6px 0;flex:none}
+.prog{flex:1;height:6px;background:var(--pale);border-radius:3px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--wine);transition:width .25s}
+.cardv{background:var(--card);border-radius:18px;padding:22px 20px;margin-bottom:18px}
+.cardv h2{font-size:21px;margin-bottom:10px}
+.cardv p{margin:0 0 10px}
+.cardv b{color:var(--wine)}
+.why{border-left:3px solid var(--gold);padding:2px 0 2px 12px;margin:12px 0 0;font-size:14px}
+.q{font-family:var(--mincho);font-size:19px;line-height:1.6;margin:6px 0 16px}
+.opt{display:block;width:100%;text-align:left;background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:10px;line-height:1.5}
+.opt.ok{border-color:var(--ok);background:#E8F1E8}
+.opt.ng{border-color:var(--ng);background:#F7E4E5}
+.exp{background:var(--card);border-radius:12px;padding:12px 14px;margin:6px 0 16px;font-size:14px}
+.exp strong.ok{color:var(--ok)} .exp strong.ng{color:var(--ng)}
+.res{text-align:center;padding-top:30px}
+.res .n{font-family:var(--mincho);font-size:54px;color:var(--wine);line-height:1.2}
+.res p{margin:6px 0}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--card);border:1.5px solid var(--gold);color:var(--ink);border-radius:999px;padding:5px 12px;font-size:13px;margin:4px 3px}
+.badge.off{border-color:var(--line);color:#B3A4AB}
+/* zukan */
+.seg{display:flex;background:var(--pale);border-radius:999px;padding:3px;margin-bottom:14px}
+.seg button{flex:1;padding:7px 0;border-radius:999px;font-size:13px}
+.seg button.on{background:var(--card);font-weight:600;color:var(--wine)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gr{background:var(--card);border-radius:14px;padding:12px 12px 10px;text-align:left;position:relative;border-top:5px solid var(--wine)}
+.gr.w{border-top-color:var(--gold)}
+.gr.no{opacity:.62}
+.gr b{font-family:var(--mincho);font-size:15px;display:block;line-height:1.4}
+.gr small{color:var(--sub);font-size:11px;display:block;line-height:1.5}
+.stamp{position:absolute;right:8px;bottom:8px;font-size:10px;color:var(--wine);border:1.5px solid var(--wine);border-radius:50%;width:38px;height:38px;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;transform:rotate(-12deg);font-weight:700;background:#fff}
+.bars{margin:10px 0}
+.bar{display:flex;align-items:center;gap:8px;font-size:13px;margin:5px 0}
+.bar span{width:5.2em;flex:none;color:var(--sub)}
+.bar i{flex:1;height:9px;border-radius:2px;background:var(--pale)}
+.bar i.f{background:var(--wine)}
+.bar i.g{background:var(--gold)}
+.kv{margin:10px 0;font-size:14px}
+.kv dt{color:var(--sub);font-size:12px;margin-top:8px}
+.kv dd{margin:0}
+/* log */
+.search{width:100%;border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;font:inherit;background:var(--card);margin-bottom:10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.chip{border:1.5px solid var(--line);background:var(--card);border-radius:999px;padding:5px 12px;font-size:13px}
+.chip.on{background:var(--wine);border-color:var(--wine);color:#fff}
+.lg{display:flex;gap:12px;width:100%;text-align:left;background:var(--card);border-radius:14px;padding:12px;margin-bottom:10px;align-items:center}
+.lg .ty{flex:none;width:10px;align-self:stretch;border-radius:5px}
+.lg b{display:block;line-height:1.4}
+.lg small{color:var(--sub);font-size:12px;display:block}
+.lg .st{color:var(--gold);font-size:13px;letter-spacing:1px}
+.fab{position:fixed;right:max(16px,calc(50% - 264px));bottom:calc(env(safe-area-inset-bottom) + 78px);background:var(--wine);color:#fff;border-radius:999px;padding:13px 20px;font-weight:700;box-shadow:0 6px 16px rgba(110,26,53,.35);z-index:4}
+.empty{text-align:center;padding:40px 10px;color:var(--sub)}
+.empty h3{color:var(--ink);font-size:18px;margin-bottom:6px}
+label.f{display:block;font-size:12px;color:var(--sub);margin:14px 0 4px}
+.in{width:100%;border:1.5px solid var(--line);border-radius:10px;padding:10px 12px;font:inherit;background:var(--card);color:var(--ink)}
+textarea.in{min-height:90px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.stars button{font-size:30px;color:var(--line);padding:0 3px;line-height:1}
+.stars button.on{color:var(--gold)}
+.sl{display:flex;align-items:center;gap:8px;font-size:13px;margin:8px 0}
+.sl span{width:3.6em;flex:none}
+.sl input{flex:1;accent-color:var(--wine)}
+.sl em{font-style:normal;font-size:11px;color:var(--sub);width:4.6em;flex:none;text-align:right}
+.photo{width:100%;border-radius:14px;display:block;margin-bottom:12px}
+.sec{background:var(--card);border-radius:16px;padding:16px;margin-bottom:14px}
+.sec h3{font-size:16px;margin-bottom:8px}
+.stat{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.stat b{font-family:var(--mincho);font-size:26px;display:block;line-height:1.2;color:var(--wine)}
+.stat small{font-size:11px;color:var(--sub)}
+.xp{height:8px;background:var(--pale);border-radius:4px;overflow:hidden;margin:8px 0 4px}
+.xp i{display:block;height:100%;background:var(--gold)}
+.linkb{color:var(--wine);text-decoration:underline;font-size:14px}
+#toast{position:fixed;left:50%;top:calc(env(safe-area-inset-top) + 14px);transform:translateX(-50%);background:var(--ink);color:#fff;border-radius:999px;padding:9px 18px;font-size:13px;z-index:20;opacity:0;pointer-events:none;transition:opacity .25s;max-width:90%;text-align:center}
+#toast.on{opacity:1}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="sheet"><div class="sh" id="sh"></div></div>
+<div id="toast" role="status"></div>
+<nav><div>
+<button data-t="learn"><svg viewBox="0 0 24 24"><circle cx="9" cy="9" r="3"/><circle cx="15" cy="9" r="3"/><circle cx="12" cy="14.5" r="3"/><path d="M12 6V3m0 0c2 0 3-1 4-2"/></svg>まなぶ</button>
+<button data-t="zukan"><svg viewBox="0 0 24 24"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3z"/><path d="M5 17a3 3 0 0 1 3-3h11"/></svg>品種図鑑</button>
+<button data-t="log"><svg viewBox="0 0 24 24"><path d="M8 3h8c0 5-1 8-4 8S8 8 8 3z"/><path d="M12 11v9m-4 0h8"/></svg>ログ</button>
+<button data-t="me"><svg viewBox="0 0 24 24"><path d="M4 20V10m6 10V4m6 16v-7m4 7H2"/></svg>きろく</button>
+</div></nav>
+
+<script>
+/* ===================== 学習コンテンツ ===================== */
+const CH=[
+{id:'c1',title:'ワインの基本',sub:'なぜぶどうが酒になるのか。色と泡と甘さの正体。',lessons:[
+ {id:'c1l1',title:'ワインとは何か',cards:[
+  {h:'ぶどうの糖が、酒になる',b:'<p>ワインは、ぶどうの果汁に含まれる糖を<b>酵母</b>が食べて、<b>アルコールと二酸化炭素</b>に変えたもの。これがアルコール発酵です。</p><p class="why">ビールや日本酒は、穀物のでんぷんをまず糖に変える「糖化」が必要。ぶどうは最初から糖を持つので、つぶせば発酵が始まります。</p>'},
+  {h:'水を足さない酒',b:'<p>ワインは基本的に水を加えず、ぶどうだけで造ります。だから<b>ぶどうの出来がそのまま味になる</b>。</p><p class="why">「どこで（産地）」「何を（品種）」「いつ（収穫年）」がこれほど語られる酒が他に少ないのは、このためです。</p>'},
+  {h:'糖が多いほど度数が上がる',b:'<p>よく熟して糖が多いぶどうほど、アルコール度数の高いワインになります。暑い産地のワインが力強く、涼しい産地のワインが軽やかになりやすい理由です。</p><p>多くのワインは12〜14.5%ほどに収まります。</p>'}],
+  quiz:[
+  {q:'アルコール発酵で、酵母は糖を何に変える？',o:['アルコールと二酸化炭素','アルコールと酸素','酸とタンニン','水と糖'],a:0,e:'酵母は糖をアルコールと二酸化炭素に分解します。この二酸化炭素を閉じ込めたものがスパークリングワインです。'},
+  {q:'ビールや日本酒にあって、ワイン造りに基本的に不要な工程は？',o:['でんぷんを糖に変える糖化','発酵','熟成','瓶詰め'],a:0,e:'ぶどうは果汁そのものに糖があるため、糖化の工程が要りません。'},
+  {q:'暑い産地のワインがアルコール高めになりやすいのはなぜ？',o:['ぶどうがよく熟して糖が多くなるから','水を多く加えるから','酵母の種類が違うから','樽で長く寝かせるから'],a:0,e:'糖が多いほど、発酵で生まれるアルコールも多くなります。'}]},
+ {id:'c1l2',title:'赤・白・ロゼ・オレンジの違い',cards:[
+  {h:'違いは「皮と一緒に発酵するか」',b:'<p><b>赤ワイン</b>は黒ぶどうを皮と種ごと発酵させます（醸し）。<b>白ワイン</b>は先に搾って、果汁だけを発酵させます。</p><p class="why">赤い色（アントシアニン）と渋み（タンニン）は、果汁ではなく皮と種にあります。だから皮と触れさせない白には、渋みがほとんどありません。</p>'},
+  {h:'黒ぶどうから白ワインも造れる',b:'<p>黒ぶどうでも、果汁はたいてい透明。皮の色が移る前にそっと搾れば白ワインになります。シャンパーニュの「ブラン・ド・ノワール」がその例です。</p>'},
+  {h:'ロゼとオレンジ',b:'<p><b>ロゼ</b>は、黒ぶどうの皮を短時間だけ漬けて、淡く色づいたところで引き上げるのが代表的な造り方。</p><p><b>オレンジワイン</b>は白ぶどうを赤ワインのように皮ごと発酵させたもの。白なのに渋みとコクがあります。ジョージアで古くから続く造り方です。</p>'}],
+  quiz:[
+  {q:'赤ワインの色は、ぶどうのどこから来る？',o:['果皮','果汁','種の中','茎'],a:0,e:'色素（アントシアニン）は果皮にあります。果汁は多くの品種で透明です。'},
+  {q:'白ワインに渋みが少ない理由は？',o:['皮や種と触れさせず、果汁だけを発酵させるから','白ぶどうにはタンニンがまったく無いから','冷やして飲むから','発酵期間が短いから'],a:0,e:'タンニンは主に皮と種から出ます。白は先に搾るので抽出されにくいのです。'},
+  {q:'オレンジワインとは？',o:['白ぶどうを皮ごと発酵させたワイン','オレンジ果汁を加えたワイン','赤と白を混ぜたワイン','熟成して色が変わった白ワイン'],a:0,e:'白ぶどうを赤ワインと同じ手順で造ったもの。皮からの色と渋みが出ます。'}]},
+ {id:'c1l3',title:'泡と甘口のしくみ',cards:[
+  {h:'泡は発酵のガスを閉じ込めたもの',b:'<p><b>瓶内二次発酵</b>：できたワインに糖と酵母を足し、瓶の中でもう一度発酵させる。シャンパーニュ、カバ、フランチャコルタなど。</p><p><b>タンク方式</b>：密閉タンクで二次発酵させる。プロセッコの多くがこれ。</p><p class="why">瓶内二次発酵は、役目を終えた酵母（澱）と長く触れるため、パンやブリオッシュのような香りが付きます。タンク方式はぶどうの果実香がそのまま残ります。</p>'},
+  {h:'甘口は「糖を残す」',b:'<p>糖を全部アルコールに変えれば辛口、残せば甘口。残し方は2通りです。</p><p><b>発酵を途中で止める</b>、または<b>ぶどうの糖を濃縮する</b>（貴腐、遅摘み、陰干し、凍結）。</p><p class="why">貴腐は、ボトリティス・シネレアという菌が皮に小さな穴を開け、水分だけが蒸発して糖が凝縮する現象。ソーテルヌやトカイが有名です。</p>'},
+  {h:'酒精強化ワイン',b:'<p>ブランデーを加えて度数を上げたワイン。</p><p><b>ポート</b>（ポルトガル）：発酵の<b>途中</b>で加える→酵母が止まり、糖が残って甘口。</p><p><b>シェリー</b>（スペイン）：発酵が<b>終わってから</b>加える→辛口が基本。</p>'}],
+  quiz:[
+  {q:'シャンパーニュの泡の造り方は？',o:['瓶内二次発酵','タンク方式','炭酸ガス注入','一次発酵の途中で瓶詰め'],a:0,e:'瓶の中で二度目の発酵を行い、発生した二酸化炭素をワインに溶け込ませます。'},
+  {q:'プロセッコで主流の造り方は？',o:['タンク方式','瓶内二次発酵','酒精強化','貴腐'],a:0,e:'密閉タンクで二次発酵させるため、フレッシュな果実香が残ります。'},
+  {q:'ポートワインが甘い理由は？',o:['発酵の途中でブランデーを加え、糖が残るから','砂糖を大量に加えるから','貴腐ぶどうだけを使うから','発酵後に果汁を混ぜるから'],a:0,e:'高いアルコールで酵母の働きが止まり、まだ食べられていない糖がそのまま残ります。'},
+  {q:'貴腐ワインの甘さを生むものは？',o:['菌の働きで水分が抜け、糖が凝縮すること','ぶどうを凍らせること','樽での長期熟成','収穫後に砂糖を足すこと'],a:0,e:'ボトリティス・シネレア菌が果皮に穴を開け、水分が蒸発して糖が濃縮されます。'}]}
+]},
+{id:'c2',title:'テイスティング',sub:'見る、嗅ぐ、味わう。言葉にすると記憶に残る。',lessons:[
+ {id:'c2l1',title:'外観を読む',cards:[
+  {h:'色は年齢を語る',b:'<p><b>赤</b>：若いうちは紫がかり、熟成でレンガ色、褐色へ。色は<b>薄く</b>なっていきます。</p><p><b>白</b>：若いうちは緑がかった淡いレモン色、熟成で黄金、琥珀色へ。色は<b>濃く</b>なっていきます。</p><p class="why">グラスを傾け、縁の色を白い紙の上で見るのがコツ。縁にオレンジが差していれば熟成のサインです。</p>'},
+  {h:'色の濃さは品種のヒント',b:'<p>皮が薄いピノ・ノワールは向こうが透ける淡い色。皮が厚いカベルネ・ソーヴィニヨンやシラーは濃く不透明。</p><p>ただしネッビオーロのように「色は淡いのに渋みは強烈」という例外もあります。</p>'},
+  {h:'グラスを伝う「脚」',b:'<p>グラスを回した後に内側を伝う滴を、脚（涙）と呼びます。</p><p class="why">アルコール度数や糖分が高いほど、はっきり現れます。品質の良し悪しを示すものではありません。</p>'}],
+  quiz:[
+  {q:'熟成が進んだ赤ワインの縁の色は？',o:['レンガ色・オレンジ','紫','緑がかった色','黒'],a:0,e:'赤は熟成で紫→ルビー→ガーネット→レンガ色と変わり、色が淡くなっていきます。'},
+  {q:'白ワインは熟成すると色がどうなる？',o:['濃くなる（黄金〜琥珀へ）','薄くなる','緑が強くなる','変わらない'],a:0,e:'赤とは逆に、白は酸化とともに色が濃くなります。'},
+  {q:'「脚」がはっきり出るワインに言えることは？',o:['アルコール度数や糖分が高い傾向','高級である','熟成が長い','酸が強い'],a:0,e:'脚は粘性の表れで、品質の指標ではありません。'}]},
+ {id:'c2l2',title:'香りを読む',cards:[
+  {h:'香りは3つの出どころ',b:'<p><b>第1アロマ</b>：ぶどう由来。果実、花、ハーブ。</p><p><b>第2アロマ</b>：発酵・醸造由来。酵母、バター、パン。</p><p><b>第3アロマ（ブーケ）</b>：熟成由来。きのこ、なめし革、腐葉土、ドライフルーツ。</p><p class="muted">樽のバニラ香を第2と第3のどちらに入れるかは、教本の流派で分かれます。</p>'},
+  {h:'気候が香りを変える',b:'<p>同じシャルドネでも、<b>涼しい産地</b>ではレモンや青りんご、<b>暖かい産地</b>では桃、パイナップルやマンゴーの香りに。</p><p class="why">ぶどうの熟度が上がるにつれ、香りは「柑橘→核果→トロピカル」へ移ります。香りから産地の気候を推理できます。</p>'},
+  {h:'なぜグラスを回すのか',b:'<p>回すとワインが空気に触れ、表面積も増えて、香りの成分が立ちのぼります。</p><p>まず回さずに嗅ぎ、次に回して嗅ぐと、違いがよく分かります。</p>'}],
+  quiz:[
+  {q:'第1アロマの由来は？',o:['ぶどうそのもの','発酵','樽','瓶での熟成'],a:0,e:'果実・花・ハーブなど、品種が本来持っている香りです。'},
+  {q:'きのこ、なめし革、腐葉土の香りは何に由来する？',o:['熟成','ぶどうの品種','酵母の発酵','冷却'],a:0,e:'熟成の過程で生まれる第3アロマ（ブーケ）です。'},
+  {q:'暖かい産地のシャルドネで出やすい香りは？',o:['パイナップルなどトロピカルフルーツ','レモンと青りんご','黒こしょう','ピーマン'],a:0,e:'熟度が上がると香りは柑橘から核果、トロピカルへ移ります。'},
+  {q:'グラスを回す目的は？',o:['空気に触れさせて香りを立たせる','温度を下げる','澱を沈める','泡を消す'],a:0,e:'空気と触れる面が増え、香り成分が揮発しやすくなります。'}]},
+ {id:'c2l3',title:'味わいを分解する',cards:[
+  {h:'酸味と渋みを区別する',b:'<p><b>酸味</b>：口の両脇から<b>唾液が出る</b>感覚。</p><p><b>渋み（タンニン）</b>：歯ぐきや舌が<b>キュッと乾く</b>感覚。</p><p class="why">タンニンは唾液中のたんぱく質と結びつき、口の滑らかさを奪います。「出る」か「乾く」かで見分けられます。</p>'},
+  {h:'ボディは重さ',b:'<p>口の中での重み、厚みのこと。水と牛乳の違いを思い浮かべてください。</p><p>主に<b>アルコール度数</b>が決め手で、果実の凝縮感や糖分も加わります。軽いものをライトボディ、重いものをフルボディと呼びます。</p>'},
+  {h:'気候で骨格が決まる',b:'<p><b>涼しい産地</b>：酸が高く、アルコール低め、軽やか。</p><p><b>暖かい産地</b>：酸が穏やかで、アルコール高め、ふくよか。</p><p class="why">ぶどうは熟すほど糖が増え、酸が減ります。涼しいと熟すのが遅く、酸が残ります。</p>'},
+  {h:'余韻',b:'<p>飲み込んだ後に風味が続く長さ。良いワインほど長く、心地よく続く傾向があります。ログでは甘み・酸味・渋み・ボディの4つを記録していきましょう。</p>'}],
+  quiz:[
+  {q:'タンニンはどう感じる？',o:['歯ぐきや舌が乾くような収斂感','唾液がたくさん出る','舌先が甘い','喉が熱い'],a:0,e:'タンニンが唾液のたんぱく質と結びつくため、口が乾いたように感じます。'},
+  {q:'酸が高いワインを飲むと？',o:['唾液が出る','口が乾く','喉が熱くなる','苦みが残る'],a:0,e:'酸は唾液の分泌を促します。渋みとの見分けどころです。'},
+  {q:'涼しい産地のワインの傾向は？',o:['酸が高く、アルコール低め','酸が低く、アルコール高め','必ず甘口','色が濃い'],a:0,e:'熟すのが遅いため糖が上がりにくく、酸が残ります。'},
+  {q:'ボディを主に左右するのは？',o:['アルコール度数','ワインの色','酸の量','グラスの形'],a:0,e:'アルコールが高いほど重く厚みを感じます。'}]}
+]},
+{id:'c3',title:'ぶどう品種',sub:'品種を知れば、初めての一本も味の見当がつく。',lessons:[
+ {id:'c3l1',title:'黒ぶどうの御三家',cards:[
+  {h:'カベルネ・ソーヴィニヨン',b:'<p>色が濃く、渋みが強く、長く熟成する。カシス、杉、ときにピーマンの香り。ボルドー左岸やナパ・ヴァレーが代表。</p><p class="why">粒が小さく皮が厚いため、果汁に対する皮の割合が高い。色素とタンニンが多く出るのはこのためです。</p>'},
+  {h:'メルロ',b:'<p>渋みがなめらかで、ふくよか。プラムのような果実味。カベルネより早く熟すので、ボルドー右岸（サン・テミリオン、ポムロール）の主役です。</p>'},
+  {h:'ピノ・ノワール',b:'<p>色が淡く、渋みは控えめ、酸は高め。いちごやチェリーの香り。ブルゴーニュが本家で、涼しい土地を好みます。</p><p class="why">皮が薄く病気に弱い、栽培が難しい品種。そのぶん土地の違いを繊細に映すと言われます。</p>'}],
+  quiz:[
+  {q:'色が淡く、渋みが控えめで酸が高い品種は？',o:['ピノ・ノワール','カベルネ・ソーヴィニヨン','シラー','マルベック'],a:0,e:'皮が薄いため色素もタンニンも少なめです。'},
+  {q:'カベルネ・ソーヴィニヨンの色と渋みが強い理由は？',o:['粒が小さく皮が厚いから','糖度が低いから','樽で熟成するから','種が無いから'],a:0,e:'果汁に対する皮の比率が高く、色素とタンニンが多く抽出されます。'},
+  {q:'メルロが主役のボルドーの地区は？',o:['右岸（サン・テミリオン、ポムロール）','左岸（メドック）','ソーテルヌ','シャブリ'],a:0,e:'右岸は冷たい粘土質の土壌が多く、早く熟すメルロが向きます。'}]},
+ {id:'c3l2',title:'個性派の黒ぶどう',cards:[
+  {h:'シラー（シラーズ）',b:'<p>濃厚で、黒こしょうの香りが目印。フランスの北ローヌではシラー、オーストラリアではシラーズと呼ばれる同じ品種です。</p><p class="why">こしょうの香りの正体はロタンドンという成分。黒こしょうにも含まれています。</p>'},
+  {h:'イタリアの二大品種',b:'<p><b>サンジョヴェーゼ</b>：酸が高くチェリーの香り。トスカーナのキアンティの主体。</p><p><b>ネッビオーロ</b>：色は淡いのに、渋みと酸がとても強い。バラやタールの香り。ピエモンテのバローロ、バルバレスコを生みます。</p>'},
+  {h:'スペインと南米',b:'<p><b>テンプラニーリョ</b>：スペインを代表。リオハが有名。</p><p><b>マルベック</b>：フランス南西部カオール生まれ、アルゼンチンで花開いた濃厚な品種。</p><p><b>グルナッシュ</b>：暑さに強く、度数が高くなりやすい。南ローヌやスペイン（ガルナッチャ）。</p>'},
+  {h:'軽やかな赤',b:'<p><b>ガメイ</b>：ボージョレの品種。渋みが少なくフルーティ。新酒ボージョレ・ヌーヴォーは毎年11月の第3木曜日に解禁されます。</p><p><b>ジンファンデル</b>：カリフォルニアで有名。イタリアのプリミティーヴォと同じ品種です。</p>'}],
+  quiz:[
+  {q:'黒こしょうの香りが特徴の品種は？',o:['シラー','ピノ・ノワール','ガメイ','メルロ'],a:0,e:'ロタンドンという香り成分によるものです。'},
+  {q:'バローロを造る品種は？',o:['ネッビオーロ','サンジョヴェーゼ','テンプラニーリョ','グルナッシュ'],a:0,e:'ピエモンテ州の品種。色は淡めでも渋みと酸は非常に強いのが特徴です。'},
+  {q:'キアンティの主体となる品種は？',o:['サンジョヴェーゼ','ネッビオーロ','メルロ','ガメイ'],a:0,e:'トスカーナ州を代表する、酸の高い品種です。'},
+  {q:'シラーとシラーズの関係は？',o:['同じ品種の別名','親子関係の別品種','白ぶどうと黒ぶどう','無関係'],a:0,e:'フランスなどではシラー、オーストラリアなどではシラーズと呼ばれます。'},
+  {q:'マルベックで世界的に有名な国は？',o:['アルゼンチン','ドイツ','ニュージーランド','日本'],a:0,e:'原産はフランス南西部ですが、アルゼンチンのメンドーサで代表品種になりました。'}]},
+ {id:'c3l3',title:'白ぶどうの御三家',cards:[
+  {h:'シャルドネ',b:'<p>品種自体の香りは控えめ。だから<b>産地と造り手を映す鏡</b>になります。</p><p>涼しいシャブリで樽を使わなければ、シャープでミネラル感のある味。暖かいカリフォルニアで樽を使えば、バターやバニラの香るコクのある味に。</p><p class="why">バターの香りは、鋭いリンゴ酸をまろやかな乳酸に変える「マロラクティック発酵」で生まれるジアセチルという成分です。</p>'},
+  {h:'ソーヴィニヨン・ブラン',b:'<p>ハーブ、青草、グレープフルーツの爽やかな香り。酸が高い。フランス・ロワールのサンセールと、ニュージーランドのマールボロが二大産地。マールボロはパッションフルーツの香りが華やかです。</p>'},
+  {h:'リースリング',b:'<p>酸が高く、辛口から極甘口まで造れる万能選手。ドイツとフランスのアルザスが本場。</p><p class="why">熟成すると「ペトロール香」と呼ばれる灯油のような香りが出ます。欠陥ではなく、この品種の個性です。</p>'}],
+  quiz:[
+  {q:'シャブリを造る品種は？',o:['シャルドネ','ソーヴィニヨン・ブラン','リースリング','甲州'],a:0,e:'シャブリはブルゴーニュ北部の産地で、シャルドネから造られます。'},
+  {q:'ニュージーランドのマールボロで有名な品種は？',o:['ソーヴィニヨン・ブラン','シャルドネ','ゲヴュルツトラミネール','ヴィオニエ'],a:0,e:'ハーブとパッションフルーツの鮮烈な香りで世界的に知られます。'},
+  {q:'熟成したリースリングに現れる香りは？',o:['ペトロール（灯油のような）香','黒こしょう','ピーマン','バニラ'],a:0,e:'リースリングの熟成香として知られる個性です。'},
+  {q:'白ワインのバターの香りは何から生まれる？',o:['マロラクティック発酵','ぶどうの皮','貴腐菌','急速な冷却'],a:0,e:'リンゴ酸が乳酸に変わる過程でジアセチルが生まれ、バターのように香ります。'}]},
+ {id:'c3l4',title:'香りの白と、日本の品種',cards:[
+  {h:'香り高い白',b:'<p><b>ゲヴュルツトラミネール</b>：ライチとバラの強い香り。酸は穏やか。アルザスが有名。</p><p><b>ヴィオニエ</b>：アプリコットや白い花。北ローヌのコンドリュー。</p><p><b>ピノ・グリ</b>：イタリアではピノ・グリージョと呼ばれる同じ品種。皮は灰色がかったピンク。</p><p><b>シュナン・ブラン</b>：酸が高く、辛口も甘口も泡も造れる。ロワールと南アフリカ。</p>'},
+  {h:'甲州',b:'<p>日本を代表する白ぶどう。皮は薄紫色。柑橘の香りで繊細、和食によく合います。</p><p>2010年、ワイン用ぶどうの国際機関OIVのリストに登録され、ヨーロッパへ輸出する際に品種名をラベルに書けるようになりました。</p>'},
+  {h:'マスカット・ベーリーA',b:'<p>日本の赤ワイン用品種。新潟の川上善兵衛が1927年に交配して生みました。いちごのような甘い香りで渋みは穏やか。2013年にOIVに登録されています。</p>'}],
+  quiz:[
+  {q:'ライチの香りが特徴の品種は？',o:['ゲヴュルツトラミネール','リースリング','甲州','シャルドネ'],a:0,e:'ライチやバラの華やかな香りが目印です。'},
+  {q:'甲州の果皮の色は？',o:['薄紫色','緑色','黒に近い紫','黄色'],a:0,e:'白ワイン用ですが、皮は薄紫（グリ系）です。'},
+  {q:'マスカット・ベーリーAを生んだ人物は？',o:['川上善兵衛','高野正誠','鳥井信治郎','神谷伝兵衛'],a:0,e:'新潟の岩の原葡萄園の創業者で、「日本のワインぶどうの父」と呼ばれます。'},
+  {q:'ピノ・グリとピノ・グリージョの関係は？',o:['同じ品種','別の品種','親子','白と黒の違い'],a:0,e:'フランス語名とイタリア語名の違いです。'}]}
+]},
+{id:'c4',title:'ヨーロッパの産地',sub:'伝統産地はラベルに土地の名を書く。土地が品種を決めている。',lessons:[
+ {id:'c4l1',title:'ボルドーとブルゴーニュ',cards:[
+  {h:'ボルドーは混ぜる',b:'<p>複数の品種をブレンドするのがボルドー流。</p><p><b>左岸</b>（メドックなど）：砂利の土壌。カベルネ・ソーヴィニヨン主体。</p><p><b>右岸</b>（サン・テミリオン、ポムロール）：粘土の土壌。メルロ主体。</p><p class="why">砂利は水はけが良く熱を蓄えるので、熟すのが遅いカベルネも熟します。粘土は冷たいので、早く熟すメルロが向く。海に近く天候が不安定なため、熟す時期の違う品種を混ぜることが保険にもなります。</p>'},
+  {h:'ブルゴーニュは混ぜない',b:'<p>赤はピノ・ノワール、白はシャルドネ。原則ひとつの品種で造ります。だから畑の違いがそのまま味の違いになります。</p>'},
+  {h:'格付けの対象が違う',b:'<p><b>ボルドー</b>：格付けは<b>シャトー（生産者）</b>に付く。1855年のメドック格付けが有名で、1級は現在5シャトー（ムートン・ロスシルドが1973年に昇格）。</p><p><b>ブルゴーニュ</b>：格付けは<b>畑</b>に付く。上から特級畑（グラン・クリュ）、1級畑（プルミエ・クリュ）、村名、地域名。</p>'}],
+  quiz:[
+  {q:'ボルドー左岸の主体品種は？',o:['カベルネ・ソーヴィニヨン','メルロ','ピノ・ノワール','シラー'],a:0,e:'水はけの良い砂利質土壌が、晩熟のカベルネを熟させます。'},
+  {q:'ブルゴーニュの格付けは何に付く？',o:['畑','生産者','品種','収穫年'],a:0,e:'グラン・クリュ、プルミエ・クリュは畑の格です。'},
+  {q:'ボルドーのメドック格付けは何に付く？',o:['シャトー（生産者）','畑','村','品種'],a:0,e:'1855年に定められ、シャトー単位で1級から5級に分けられました。'},
+  {q:'メドック格付けの1級は現在いくつ？',o:['5','3','4','10'],a:0,e:'当初は4つ。1973年にムートン・ロスシルドが昇格して5つになりました。'}]},
+ {id:'c4l2',title:'シャンパーニュ、ローヌ、ロワール',cards:[
+  {h:'シャンパーニュ',b:'<p>フランス北部の冷涼な産地。主要品種は<b>シャルドネ、ピノ・ノワール、ムニエ</b>の3つ。</p><p><b>ブラン・ド・ブラン</b>：白ぶどうだけで造ったもの。<b>ブラン・ド・ノワール</b>：黒ぶどうだけで造った白。</p><p class="why">寒くてぶどうが熟しきらず、酸が高い。そのまま飲むには鋭すぎる酸が、泡のワインには理想的な骨格になります。年ごとの出来の差を、複数年のワインを混ぜること（ノン・ヴィンテージ）で均しています。</p>'},
+  {h:'ローヌ',b:'<p><b>北ローヌ</b>：赤はシラー単独が基本。エルミタージュ、コート・ロティ。</p><p><b>南ローヌ</b>：グルナッシュ主体のブレンド。シャトーヌフ・デュ・パプが有名。</p>'},
+  {h:'ロワールとアルザス',b:'<p><b>ロワール</b>：サンセール、プイィ・フュメはソーヴィニヨン・ブラン。ヴーヴレはシュナン・ブラン。</p><p><b>アルザス</b>：ドイツ国境沿い。フランスでは珍しく、ラベルに品種名を書きます。リースリングやゲヴュルツトラミネールが中心。</p>'}],
+  quiz:[
+  {q:'「ブラン・ド・ブラン」とは？',o:['白ぶどうだけで造ったシャンパーニュ','黒ぶどうだけで造ったシャンパーニュ','ロゼのシャンパーニュ','甘口のシャンパーニュ'],a:0,e:'「白の白」の意味。多くはシャルドネ100%です。'},
+  {q:'北ローヌの赤ワインの品種は？',o:['シラー','グルナッシュ','ガメイ','メルロ'],a:0,e:'エルミタージュやコート・ロティが代表です。'},
+  {q:'サンセールの白ワインの品種は？',o:['ソーヴィニヨン・ブラン','シャルドネ','シュナン・ブラン','リースリング'],a:0,e:'ロワール川上流の、ソーヴィニヨン・ブランの銘醸地です。'},
+  {q:'シャンパーニュの冷涼な気候が泡に向く理由は？',o:['酸の高いぶどうが得られるから','糖度が非常に高くなるから','色が濃くなるから','タンニンが増えるから'],a:0,e:'高い酸がスパークリングワインの骨格と爽快感を支えます。'}]},
+ {id:'c4l3',title:'イタリア、スペイン、ドイツ',cards:[
+  {h:'イタリア',b:'<p>20州すべてでワインを造る、土着品種の宝庫。</p><p><b>ピエモンテ</b>：ネッビオーロのバローロ、バルバレスコ。</p><p><b>トスカーナ</b>：サンジョヴェーゼのキアンティ。</p><p><b>ヴェネト</b>：泡のプロセッコ（品種はグレーラ）、陰干しぶどうで造る濃厚な赤アマローネ。</p><p>格付けの最上位はDOCGです。</p>'},
+  {h:'スペイン',b:'<p><b>リオハ</b>：テンプラニーリョの赤。熟成期間でクリアンサ→レセルバ→グラン・レセルバと表示が変わります。</p><p><b>カバ</b>：瓶内二次発酵の泡。</p><p><b>シェリー</b>：南部ヘレスの酒精強化ワイン。</p>'},
+  {h:'ドイツ',b:'<p>冷涼な気候でリースリングが主役。</p><p>上級ワインの等級（プレディカート）は、カビネット→シュペートレーゼ→アウスレーゼ…と上がります。</p><p class="why">この等級は<b>収穫時の果汁の糖度</b>で決まります。寒い国では「どれだけ熟したか」が価値だったため。ワインの甘さそのものを示すわけではなく、辛口のシュペートレーゼもあります。</p>'}],
+  quiz:[
+  {q:'プロセッコの品種は？',o:['グレーラ','シャルドネ','ネッビオーロ','マカベオ'],a:0,e:'ヴェネト州などで造られる、タンク方式が主流の泡です。'},
+  {q:'アマローネの特徴的な造り方は？',o:['ぶどうを陰干しして凝縮させる','凍ったぶどうを搾る','ブランデーを加える','瓶内で二次発酵させる'],a:0,e:'陰干しで水分を飛ばし、糖と風味を凝縮させて辛口に仕上げます。'},
+  {q:'リオハの熟成表示で、もっとも熟成が長いのは？',o:['グラン・レセルバ','クリアンサ','レセルバ','ホーベン'],a:0,e:'クリアンサ、レセルバ、グラン・レセルバの順に熟成期間が長くなります。'},
+  {q:'ドイツのカビネット、シュペートレーゼなどの等級の基準は？',o:['収穫時の果汁の糖度','ワインの甘さ','熟成年数','畑の格'],a:0,e:'果汁の糖度で決まるため、等級が高くても辛口に仕上げたワインがあります。'}]}
+]},
+{id:'c5',title:'新世界と日本',sub:'ラベルに品種を書く国々。気候と品種で選べる。',lessons:[
+ {id:'c5l1',title:'アメリカと南米',cards:[
+  {h:'新世界のラベルは品種名',b:'<p>ヨーロッパ以外の産地を、慣例で「新世界」と呼びます。ラベルに<b>品種名</b>を大きく書くので、選びやすいのが特徴。温暖な産地が多く、果実味が豊かでアルコールは高めになる傾向があります。</p>'},
+  {h:'アメリカ',b:'<p>生産の大半はカリフォルニア。ナパ・ヴァレーのカベルネ・ソーヴィニヨンが看板です。北のオレゴンは涼しく、ピノ・ノワールで知られます。</p><p class="why">1976年、パリで開かれた目隠し試飲会で、カリフォルニアワインがフランスの名門を抑えて赤白とも1位に。「パリスの審判」と呼ばれ、新世界の評価を一変させました。</p>'},
+  {h:'チリとアルゼンチン',b:'<p><b>チリ</b>：ぶどうの根を枯らす害虫フィロキセラの被害を受けていない、世界でも珍しい国。カルメネールが個性派品種。</p><p><b>アルゼンチン</b>：アンデス山麓メンドーサのマルベック。</p><p class="why">標高が高い畑は、日差しは強いのに夜は冷え込みます。昼に糖と色素が育ち、夜に酸が保たれる。濃いのに重すぎない味はここから来ます。</p>'}],
+  quiz:[
+  {q:'「パリスの審判」が行われた年は？',o:['1976年','1855年','1927年','2010年'],a:0,e:'カリフォルニアワインがフランスの名門に勝ち、世界を驚かせました。'},
+  {q:'チリのぶどう栽培の大きな特徴は？',o:['フィロキセラの被害を受けていない','世界一寒い','白ぶどうしか育たない','標高ゼロの畑しかない'],a:0,e:'海、山脈、砂漠に囲まれた地形が害虫の侵入を防いだとされます。'},
+  {q:'標高の高い畑の利点は？',o:['昼夜の寒暖差で酸が保たれる','雨が多い','収穫が年2回できる','タンニンが無くなる'],a:0,e:'夜の冷え込みが酸を保ち、強い日差しが糖と色素を育てます。'},
+  {q:'新世界のワインのラベルに多い表示は？',o:['品種名','畑の格付け','村の名前だけ','熟成年数だけ'],a:0,e:'品種名表示が基本なので、味の見当をつけやすくなります。'}]},
+ {id:'c5l2',title:'オセアニアと南アフリカ',cards:[
+  {h:'オーストラリア',b:'<p>シラーズが看板。南オーストラリア州のバロッサ・ヴァレーは濃厚で力強いスタイルで有名です。</p>'},
+  {h:'ニュージーランド',b:'<p>南島マールボロのソーヴィニヨン・ブランで世界的に成功。さらに南のセントラル・オタゴはピノ・ノワールの産地です。</p><p class="why">オーストラリアやニュージーランドでは、高級ワインにもスクリューキャップが普及しています。コルク由来の汚染でカビ臭くなる「ブショネ」（原因物質はTCA）を避けるためで、安物の印ではありません。</p>'},
+  {h:'南アフリカ',b:'<p>独自品種<b>ピノタージュ</b>は、1925年にピノ・ノワールとサンソーを交配して生まれました。白ではシュナン・ブランの栽培面積が世界最大です。</p>'}],
+  quiz:[
+  {q:'ピノタージュの交配親は？',o:['ピノ・ノワールとサンソー','ピノ・ノワールとシラー','メルロとカベルネ','ガメイとグルナッシュ'],a:0,e:'1925年に南アフリカで生まれた独自品種です。'},
+  {q:'「ブショネ」の原因物質は？',o:['TCA','タンニン','ジアセチル','ロタンドン'],a:0,e:'コルクなどに由来するTCAが、濡れた段ボールのようなカビ臭を生みます。'},
+  {q:'バロッサ・ヴァレーで有名な品種は？',o:['シラーズ','ピノ・ノワール','リースリング','甲州'],a:0,e:'濃厚で力強いシラーズの代表産地です。'}]},
+ {id:'c5l3',title:'日本ワイン',cards:[
+  {h:'「日本ワイン」の定義',b:'<p><b>日本ワイン</b>は、国産ぶどうだけを使い、国内で醸造したワイン。2018年10月に表示ルールが施行されました。</p><p>輸入した濃縮果汁などを使って国内で造ったものは「国内製造ワイン」と呼ばれ、区別されます。裏ラベルで確認できます。</p>'},
+  {h:'主な産地',b:'<p><b>山梨</b>：生産量1位。甲州とマスカット・ベーリーA。</p><p><b>長野</b>：メルロやシャルドネ。塩尻の桔梗ヶ原が有名。</p><p><b>北海道</b>：冷涼で、ピノ・ノワールやケルナー。余市が中心。</p><p><b>山形</b>：古くからの産地。</p><p>産地名を保護する地理的表示（GI）は、ぶどう酒では山梨（2013年指定）、北海道（2018年指定）、山形、長野、大阪が指定されています。</p>'},
+  {h:'雨と戦う栽培',b:'<p class="why">日本は生育期に雨が多く湿度が高いため、病気が大敵。ぶどうを頭上に広げる「棚仕立て」は、風通しを良くし、房を地面の湿気から遠ざける工夫です。</p>'}],
+  quiz:[
+  {q:'「日本ワイン」と表示できる条件は？',o:['国産ぶどうだけを使い国内で醸造','国内で瓶詰めすればよい','国産ぶどうを半分以上使う','日本の会社が造ればよい'],a:0,e:'輸入果汁を使ったものは「国内製造ワイン」として区別されます。'},
+  {q:'日本ワインの表示ルールが施行された年は？',o:['2018年','1976年','2010年','2024年'],a:0,e:'2018年10月に施行されました。'},
+  {q:'日本ワインの生産量が最も多い県は？',o:['山梨県','北海道','長野県','山形県'],a:0,e:'甲州やマスカット・ベーリーAの本場です。'},
+  {q:'日本で棚仕立てが多い理由は？',o:['湿気による病気を防ぐため','日光を遮るため','機械収穫のため','糖度を下げるため'],a:0,e:'風通しを良くし、房を地表の湿気から離します。'}]}
+]},
+{id:'c6',title:'ラベルと楽しみ方',sub:'選んで、冷やして、合わせる。明日の一本が変わる。',lessons:[
+ {id:'c6l1',title:'ラベルを読む',cards:[
+  {h:'産地名が品種を語る',b:'<p>ヨーロッパの伝統産地は、ラベルに<b>産地名</b>を書きます。法律でその土地の品種が決まっているからです。</p><p>シャブリ＝シャルドネ、サンセール＝ソーヴィニヨン・ブラン、バローロ＝ネッビオーロ。これまで学んだ対応が、そのまま読解力になります。</p>'},
+  {h:'原産地呼称',b:'<p>フランスのAOC（AOP）、イタリアのDOCG・DOC、スペインのDOなど。産地、品種、収穫量、造り方を定めた制度です。</p><p class="why">一般に、名乗る範囲が<b>狭いほど</b>規定が厳しく、上級になります。「ブルゴーニュ」より「村の名前」、さらに「畑の名前」という順です。</p>'},
+  {h:'ヴィンテージ',b:'<p>ラベルの年は<b>ぶどうを収穫した年</b>。瓶詰めや発売の年ではありません。年号のないNV（ノン・ヴィンテージ）は複数年のブレンドです。</p>'}],
+  quiz:[
+  {q:'ラベルの年号（ヴィンテージ）が示すのは？',o:['ぶどうの収穫年','瓶詰めした年','発売した年','ワイナリーの創業年'],a:0,e:'その年の天候がワインの個性に反映されます。'},
+  {q:'原産地呼称で、一般に上級とされるのは？',o:['名乗る範囲が狭いもの','名乗る範囲が広いもの','名前が長いもの','新しく認定されたもの'],a:0,e:'地方名より村名、村名より畑名のほうが規定が厳しくなります。'},
+  {q:'ラベルに「Chablis」とあれば、品種は？',o:['シャルドネ','ソーヴィニヨン・ブラン','リースリング','ピノ・ノワール'],a:0,e:'産地名が品種を示す、伝統産地ならではの読み方です。'}]},
+ {id:'c6l2',title:'温度とグラス',cards:[
+  {h:'温度で味が変わる',b:'<p><b>冷やす</b>と、酸と渋みが引き締まり、甘みと香りは控えめに。</p><p><b>温度が上がる</b>と、香りが開き、アルコール感が出ます。</p><p class="why">だから渋い赤を冷やしすぎると渋みがきつくなり、白をぬるくするとぼやけます。</p>'},
+  {h:'目安の温度',b:'<p>スパークリング：6〜8℃<br>軽い白・ロゼ：8〜10℃<br>コクのある白：10〜13℃<br>軽い赤：12〜16℃<br>重い赤：16〜18℃</p><p class="why">「赤は室温で」の室温は、昔のヨーロッパの石造りの部屋の話。日本の夏の室内では高すぎるので、冷蔵庫で20〜30分冷やすとちょうどよくなります。</p>'},
+  {h:'グラスとデカンタ',b:'<p>ボウルが大きくすぼまったグラスは、香りを溜めて鼻に届けます。注ぐのはいちばん膨らんだ所までが目安。</p><p>デカンタに移すのは、若く硬いワインを空気に触れさせて開かせるため、また古いワインの澱を取り除くためです。</p>'}],
+  quiz:[
+  {q:'ワインを冷やすと、味はどうなる？',o:['酸と渋みが引き締まり、甘みと香りは控えめに','甘みが強くなる','香りが強くなる','アルコール感が強まる'],a:0,e:'低温では香りの揮発が抑えられ、酸や渋みが際立ちます。'},
+  {q:'スパークリングワインの適温は？',o:['6〜8℃','12〜14℃','16〜18℃','20℃以上'],a:0,e:'しっかり冷やすことで泡が長持ちし、爽快感が出ます。'},
+  {q:'日本の夏に赤ワインを飲むなら？',o:['冷蔵庫で少し冷やす','そのまま室温で','氷を入れる','温める'],a:0,e:'重い赤でも16〜18℃が目安。夏の室温は高すぎます。'}]},
+ {id:'c6l3',title:'料理と合わせる、保存する',cards:[
+  {h:'合わせ方の原則',b:'<p><b>重さをそろえる</b>：軽い料理に軽いワイン、濃い料理に重いワイン。</p><p><b>酸は脂を切る</b>：揚げ物に酸の高い白や泡。</p><p><b>渋みには肉</b>：赤身肉と渋い赤。</p><p><b>産地をそろえる</b>：その土地の料理とワインは合うことが多い。</p><p class="why">タンニンは肉のたんぱく質や脂と結びつくので、口の中の渋みがやわらぎます。ステーキに渋い赤が合うのは化学的にも理にかなっています。</p>'},
+  {h:'気をつけたい組み合わせ',b:'<p><b>甘い料理</b>には、それより甘いワインを。辛口は酸っぱく感じてしまいます。</p><p><b>辛い料理</b>に高アルコールや渋い赤は、辛さと熱さを強めます。やや甘口で度数の低い白が安全。</p><p><b>魚介</b>と赤ワインで生臭く感じることがあります。ワインの鉄分が関わるという研究があります。</p>'},
+  {h:'保存',b:'<p>敵は<b>高温、光、振動、乾燥</b>。涼しく暗い場所で、コルク栓の瓶は横に寝かせてコルクを湿らせておきます。</p><p>開けた後は栓をして冷蔵庫へ。空気に触れると酸化が進むので、数日のうちに飲み切るのが目安です。</p>'}],
+  quiz:[
+  {q:'渋い赤ワインが赤身肉に合う理由は？',o:['タンニンが肉のたんぱく質や脂と結びつくから','肉の色と同じだから','酸が肉を溶かすから','アルコールが脂を固めるから'],a:0,e:'タンニンが肉の成分と結びつき、渋みがまろやかに感じられます。'},
+  {q:'揚げ物に酸の高い白や泡が合う理由は？',o:['酸が脂っこさを切るから','甘みが増すから','渋みが脂を包むから','色が似ているから'],a:0,e:'レモンを搾るのと同じ効果です。'},
+  {q:'辛い料理に合わせやすいのは？',o:['やや甘口で度数の低い白','高アルコールの赤','渋みの強い赤','樽の効いた重い白'],a:0,e:'アルコールとタンニンは辛さを強めます。'},
+  {q:'コルク栓のワインを横に寝かせて保存する理由は？',o:['コルクを湿らせて乾燥を防ぐため','澱を混ぜるため','温度を下げるため','場所を取らないため'],a:0,e:'コルクが乾いて縮むと、空気が入り酸化します。'}]}
+]}
+];
+
+/* ===================== 品種図鑑 ===================== */
+// body/acid/tannin は 1〜5 の典型値
+const GRAPES=[
+{id:'cs',n:'カベルネ・ソーヴィニヨン',en:'Cabernet Sauvignon',c:'r',body:5,acid:3,tannin:5,ar:'カシス、杉、ピーマン、ミント',rg:'ボルドー左岸、ナパ・ヴァレー、チリ',nt:'小粒で皮が厚く、色も渋みも濃い。長期熟成向き。'},
+{id:'me',n:'メルロ',en:'Merlot',c:'r',body:4,acid:3,tannin:3,ar:'プラム、ブラックチェリー、チョコレート',rg:'ボルドー右岸、長野、チリ',nt:'渋みがなめらかでふくよか。早く熟す。'},
+{id:'pn',n:'ピノ・ノワール',en:'Pinot Noir',c:'r',body:2,acid:4,tannin:2,ar:'いちご、チェリー、バラ、熟成で腐葉土',rg:'ブルゴーニュ、オレゴン、セントラル・オタゴ、北海道',nt:'皮が薄く色は淡い。土地の違いを繊細に映す。'},
+{id:'sy',n:'シラー／シラーズ',en:'Syrah / Shiraz',c:'r',body:5,acid:3,tannin:4,ar:'ブラックベリー、黒こしょう、すみれ',rg:'北ローヌ、バロッサ・ヴァレー',nt:'黒こしょうの香りはロタンドンという成分。'},
+{id:'sg',n:'サンジョヴェーゼ',en:'Sangiovese',c:'r',body:3,acid:5,tannin:4,ar:'サワーチェリー、トマトの葉、ハーブ',rg:'トスカーナ（キアンティ）',nt:'酸が高く、トマト料理と好相性。'},
+{id:'nb',n:'ネッビオーロ',en:'Nebbiolo',c:'r',body:4,acid:5,tannin:5,ar:'バラ、タール、チェリー',rg:'ピエモンテ（バローロ、バルバレスコ）',nt:'色は淡いのに渋みと酸は最強クラス。'},
+{id:'tp',n:'テンプラニーリョ',en:'Tempranillo',c:'r',body:4,acid:3,tannin:4,ar:'いちご、プラム、革、樽のバニラ',rg:'リオハ、リベラ・デル・ドゥエロ',nt:'スペインの代表品種。樽熟成との相性が良い。'},
+{id:'gr',n:'グルナッシュ',en:'Grenache',c:'r',body:4,acid:2,tannin:3,ar:'いちごジャム、白こしょう、ハーブ',rg:'南ローヌ、スペイン',nt:'暑さに強く、度数が高くなりやすい。'},
+{id:'mb',n:'マルベック',en:'Malbec',c:'r',body:5,acid:3,tannin:4,ar:'ブラックベリー、プラム、すみれ',rg:'メンドーサ（アルゼンチン）、カオール',nt:'濃い紫色。高地の畑で凝縮感と酸を両立。'},
+{id:'gm',n:'ガメイ',en:'Gamay',c:'r',body:2,acid:4,tannin:1,ar:'いちご、ラズベリー、バナナ',rg:'ボージョレ',nt:'渋みが少なくフルーティ。少し冷やしても良い。'},
+{id:'ba',n:'マスカット・ベーリーA',en:'Muscat Bailey A',c:'r',body:2,acid:3,tannin:2,ar:'いちご、綿あめ',rg:'山梨、山形、新潟',nt:'川上善兵衛が1927年に交配した日本の品種。'},
+{id:'ch',n:'シャルドネ',en:'Chardonnay',c:'w',body:4,acid:3,tannin:1,ar:'青りんご〜パイナップル、バター、バニラ',rg:'ブルゴーニュ、シャブリ、カリフォルニア',nt:'産地と造りを映す鏡。樽の有無で別物になる。'},
+{id:'sb',n:'ソーヴィニヨン・ブラン',en:'Sauvignon Blanc',c:'w',body:2,acid:5,tannin:1,ar:'グレープフルーツ、ハーブ、パッションフルーツ',rg:'ロワール（サンセール）、マールボロ',nt:'青々とした香りと高い酸。'},
+{id:'ri',n:'リースリング',en:'Riesling',c:'w',body:2,acid:5,tannin:1,ar:'ライム、白桃、蜂蜜、熟成でペトロール',rg:'ドイツ、アルザス',nt:'辛口から極甘口まで。酸が高く長命。'},
+{id:'pg',n:'ピノ・グリ',en:'Pinot Gris / Grigio',c:'w',body:3,acid:3,tannin:1,ar:'洋梨、りんご、アーモンド',rg:'アルザス、北イタリア、オレゴン',nt:'イタリアでは軽快、アルザスではコクのある味に。'},
+{id:'gw',n:'ゲヴュルツトラミネール',en:'Gewürztraminer',c:'w',body:4,acid:2,tannin:1,ar:'ライチ、バラ、しょうが',rg:'アルザス',nt:'香りの強さは随一。酸は穏やか。'},
+{id:'cb',n:'シュナン・ブラン',en:'Chenin Blanc',c:'w',body:3,acid:5,tannin:1,ar:'かりん、りんご、蜂蜜',rg:'ロワール（ヴーヴレ）、南アフリカ',nt:'辛口、甘口、泡まで造れる。'},
+{id:'ks',n:'甲州',en:'Koshu',c:'w',body:1,acid:3,tannin:1,ar:'ゆず、すだち、白桃',rg:'山梨',nt:'皮は薄紫色。繊細で和食に寄り添う。'}
+];
+const GMAP=Object.fromEntries(GRAPES.map(g=>[g.id,g]));
+
+const TYPES=[['red','赤','#6E1A35'],['white','白','#C9A942'],['rose','ロゼ','#D98A9A'],['spark','泡','#8FA9B8'],['orange','オレンジ','#C7762F'],['sweet','甘口・酒精強化','#7A5A2E']];
+const TMAP=Object.fromEntries(TYPES.map(t=>[t[0],t]));
+const COUNTRIES=['フランス','イタリア','スペイン','ドイツ','ポルトガル','アメリカ','チリ','アルゼンチン','オーストラリア','ニュージーランド','南アフリカ','日本','その他'];
+const AROMAS=['柑橘','青りんご','桃・洋梨','トロピカル','赤い果実','黒い果実','花','ハーブ・青草','スパイス','バニラ・樽','バター・パン','土・きのこ','ミネラル','蜂蜜'];
+const LV=[[0,'ぶどうの種'],[60,'新芽'],[150,'つぼみ'],[280,'若木'],[450,'収穫係'],[660,'醸造見習い'],[900,'セラー番'],[1200,'ワイン通'],[1550,'ソムリエ見習い'],[2000,'ソムリエ']];
+const BADGES=[
+['first','はじめの一歩',s=>nDone()>=1],['perfect','全問正解',s=>Object.values(s.done).some(d=>d.perfect)],
+['c1','第1章 修了',s=>chDone(0)],['c2','第2章 修了',s=>chDone(1)],['c3','第3章 修了',s=>chDone(2)],['c4','第4章 修了',s=>chDone(3)],['c5','第5章 修了',s=>chDone(4)],['c6','第6章 修了',s=>chDone(5)],
+['all','全課程 修了',s=>nDone()>=ALL.length],
+['log1','最初の一本',s=>s.logs.length>=1],['log10','10本記録',s=>s.logs.length>=10],['log30','30本記録',s=>s.logs.length>=30],
+['var5','5品種を体験',s=>drunkIds().size>=5],['var10','10品種を体験',s=>drunkIds().size>=10],
+['cn3','3か国を旅した',s=>countries().size>=3],['cn6','6か国を旅した',s=>countries().size>=6],
+['ty4','赤・白・ロゼ・泡を制覇',s=>['red','white','rose','spark'].every(t=>s.logs.some(l=>l.type===t))],
+['st3','3日連続',s=>s.streak.count>=3],['st7','7日連続',s=>s.streak.count>=7]];
+
+/* ===================== 状態 ===================== */
+const KEY='winecho_v1';
+const ALL=CH.flatMap(c=>c.lessons);
+const LMAP=Object.fromEntries(ALL.map(l=>[l.id,l]));
+let S={xp:0,done:{},wrong:{},logs:[],streak:{last:'',count:0},badges:{},daily:''};
+try{const r=localStorage.getItem(KEY);if(r)S=Object.assign(S,JSON.parse(r));}catch(e){}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S));}catch(e){toast('保存できませんでした。端末の空き容量を確認してください');}}
+const $=q=>document.querySelector(q);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const today=()=>new Date().toLocaleDateString('sv');
+const nDone=()=>ALL.filter(l=>S.done[l.id]).length;
+const chDone=i=>CH[i].lessons.every(l=>S.done[l.id]);
+const drunkIds=()=>new Set(S.logs.flatMap(l=>l.grapes||[]));
+const countries=()=>new Set(S.logs.map(l=>l.country).filter(Boolean));
+function level(){let i=0;LV.forEach((v,k)=>{if(S.xp>=v[0])i=k});return{i,name:LV[i][1],cur:LV[i][0],next:LV[i+1]?LV[i+1][0]:null};}
+function touchStreak(){const t=today();if(S.streak.last===t)return;const y=new Date(Date.now()-864e5).toLocaleDateString('sv');S.streak.count=S.streak.last===y?S.streak.count+1:1;S.streak.last=t;}
+function checkBadges(){const got=[];BADGES.forEach(b=>{if(!S.badges[b[0]]&&b[2](S)){S.badges[b[0]]=today();got.push(b[1]);}});return got;}
+let toastT;function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toastT);toastT=setTimeout(()=>t.classList.remove('on'),2600);}
+function shuffle(a){a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* ===================== 写真 (IndexedDB) ===================== */
+let dbp;
+function db(){return dbp||(dbp=new Promise((res,rej)=>{const r=indexedDB.open('winecho',1);r.onupgradeneeded=()=>r.result.createObjectStore('photos');r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);}));}
+function pPut(id,v){return db().then(d=>new Promise((res,rej)=>{const t=d.transaction('photos','readwrite');t.objectStore('photos').put(v,id);t.oncomplete=res;t.onerror=()=>rej(t.error);}));}
+function pGet(id){return db().then(d=>new Promise(res=>{const r=d.transaction('photos').objectStore('photos').get(id);r.onsuccess=()=>res(r.result||null);r.onerror=()=>res(null);})).catch(()=>null);}
+function pDel(id){return db().then(d=>new Promise(res=>{const t=d.transaction('photos','readwrite');t.objectStore('photos').delete(id);t.oncomplete=res;t.onerror=res;})).catch(()=>{});}
+function shrink(file){return new Promise((res,rej)=>{const fr=new FileReader();fr.onerror=rej;fr.onload=()=>{const im=new Image();im.onerror=rej;im.onload=()=>{const m=900,k=Math.min(1,m/Math.max(im.width,im.height));const c=document.createElement('canvas');c.width=Math.round(im.width*k);c.height=Math.round(im.height*k);c.getContext('2d').drawImage(im,0,0,c.width,c.height);res(c.toDataURL('image/jpeg',.78));};im.src=fr.result;};fr.readAsDataURL(file);});}
+
+/* ===================== 画面切替 ===================== */
+let tab='learn';
+function go(t){tab=t;document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));render();window.scrollTo(0,0);}
+document.querySelectorAll('nav button').forEach(b=>b.onclick=()=>go(b.dataset.t));
+function render(){({learn:rLearn,zukan:rZukan,log:rLog,me:rMe})[tab]();}
+function openSheet(html){$('#sh').innerHTML=html;$('#sheet').classList.add('on');$('#sheet').scrollTop=0;}
+function closeSheet(){$('#sheet').classList.remove('on');$('#sh').innerHTML='';render();}
+function head(){const l=level();return `<div class="top"><h1>ワイン帖</h1><span class="lv">Lv.${l.i+1} ${l.name}</span></div>`;}
+
+/* ===================== まなぶ ===================== */
+function nextLesson(){return ALL.find(l=>!S.done[l.id]);}
+function bunch(){
+  const rows=[5,4,4,3,2,1],R=12,gx=27,gy=24;let k=0,s='';
+  const nx=nextLesson();
+  rows.forEach((n,r)=>{for(let i=0;i<n;i++){const l=ALL[k++];if(!l)return;const x=75+(i-(n-1)/2)*gx,y=40+r*gy;
+    s+=`<circle class="berry${S.done[l.id]?' done':''}${nx&&nx.id===l.id?' next':''}" cx="${x}" cy="${y}" r="${R}" onclick="openLesson('${l.id}')"><title>${l.title}</title></circle>`;}});
+  return `<svg viewBox="0 0 150 180" role="img" aria-label="全${ALL.length}レッスンの進み具合"><path d="M75 26V8" stroke="#4F6B3A" stroke-width="3" stroke-linecap="round"/><path d="M75 12c14-12 30-8 36 2-12 8-26 8-36-2z" fill="#4F6B3A"/>${s}</svg>`;
+}
+function rLearn(){
+  const nx=nextLesson(),d=nDone();
+  let h=head()+`<div class="hero">${bunch()}<div><h2>一粒ずつ、色づける</h2><div class="big">${d}<small> / ${ALL.length} レッスン</small></div>`+
+   (nx?`<p class="muted" style="margin:0 0 8px">つぎは「${nx.title}」</p><button class="btn" onclick="openLesson('${nx.id}')">つづきを学ぶ</button>`:`<p class="muted" style="margin:0">全課程を修了しました。復習クイズで知識を保ちましょう。</p>`)+`</div></div>`;
+  const dd=S.daily===today();
+  h+=`<div class="daily"><div><b>今日の5問</b><p>${dd?'今日の分は済みました。もう一度挑戦もできます':'学んだ範囲から出題。間違えた問題が優先されます'}</p></div><button class="btn" onclick="startDaily()">${dd?'もう一度':'挑戦する'}</button></div>`;
+  CH.forEach((c,ci)=>{const n=c.lessons.filter(l=>S.done[l.id]).length;
+    h+=`<section class="ch"><h3>第${ci+1}章 ${c.title}<span>${n}/${c.lessons.length}</span></h3><p class="muted">${c.sub}</p>`;
+    c.lessons.forEach(l=>{const dn=S.done[l.id];
+      h+=`<button class="ls${dn?' done':''}${nx&&nx.id===l.id?' next':''}" onclick="openLesson('${l.id}')"><i></i><span><b>${l.title}</b><small>読みもの${l.cards.length}枚とクイズ${l.quiz.length}問</small></span>${dn?`<em>${dn.best}/${l.quiz.length}</em>`:''}</button>`;});
+    h+=`</section>`;});
+  $('#app').innerHTML=h;
+}
+let L=null; // 進行中のレッスン
+function openLesson(id){const l=LMAP[id];L={mode:'lesson',l,i:0,qs:l.quiz.map((q,k)=>({q,id:id+'-'+k})),qi:0,ok:0,gain:0,title:l.title};showCard();}
+function shTop(p){return `<div class="shtop"><button class="x" onclick="closeSheet()">とじる</button><div class="prog"><i style="width:${Math.round(p*100)}%"></i></div></div>`;}
+function showCard(){const c=L.l.cards[L.i],tot=L.l.cards.length+L.qs.length;
+  openSheet(shTop(L.i/tot)+`<p class="muted">${L.title}</p><div class="cardv"><h2>${c.h}</h2>${c.b}</div>`+
+  `<button class="btn wide" onclick="nextCard()">${L.i<L.l.cards.length-1?'つぎへ':'クイズに進む'}</button>`+
+  (L.i>0?`<p style="text-align:center"><button class="linkb" onclick="L.i--;showCard()">前に戻る</button></p>`:''));}
+function nextCard(){if(L.i<L.l.cards.length-1){L.i++;showCard();}else showQ();}
+function showQ(){const it=L.qs[L.qi],q=it.q;const base=L.mode==='lesson'?L.l.cards.length:0,tot=base+L.qs.length;
+  const opts=shuffle(q.o.map((t,i)=>({t,i})));L.opts=opts;L.ans=false;
+  openSheet(shTop((base+L.qi)/tot)+`<p class="muted">${L.title}　${L.qi+1} / ${L.qs.length}問</p><div class="q">${q.q}</div>`+
+  opts.map((o,k)=>`<button class="opt" id="o${k}" onclick="answer(${k})">${o.t}</button>`).join('')+`<div id="fb"></div>`);}
+function answer(k){if(L.ans)return;L.ans=true;const it=L.qs[L.qi],q=it.q,right=L.opts[k].i===q.a;
+  L.opts.forEach((o,j)=>{const b=$('#o'+j);b.disabled=true;if(o.i===q.a)b.classList.add('ok');else if(j===k)b.classList.add('ng');});
+  if(right){L.ok++;L.gain+=5;S.xp+=5;if(S.wrong[it.id]){S.wrong[it.id]--;if(S.wrong[it.id]<=0)delete S.wrong[it.id];}}
+  else S.wrong[it.id]=(S.wrong[it.id]||0)+1;
+  save();
+  $('#fb').innerHTML=`<div class="exp"><strong class="${right?'ok':'ng'}">${right?'正解':'不正解'}</strong><br>${q.e}</div><button class="btn wide" onclick="nextQ()">${L.qi<L.qs.length-1?'つぎの問題':'結果を見る'}</button>`;
+  $('#fb').scrollIntoView({block:'nearest'});}
+function nextQ(){if(L.qi<L.qs.length-1){L.qi++;showQ();}else finish();}
+function finish(){
+  const n=L.qs.length;let first=false;
+  if(L.mode==='lesson'){const id=L.l.id,p=S.done[id];if(!p){first=true;S.xp+=20;L.gain+=20;}
+    S.done[id]={best:Math.max(p?p.best:0,L.ok),perfect:(p&&p.perfect)||L.ok===n,ts:today()};}
+  else S.daily=today();
+  touchStreak();const got=checkBadges();save();
+  const nx=nextLesson();
+  openSheet(shTop(1)+`<div class="res"><p class="muted">${L.title}</p><div class="n">${L.ok}<small style="font-size:22px"> / ${n}</small></div>`+
+   `<p>${L.ok===n?'全問正解です':L.ok>=n-1?'あと一歩。解説をもう一度読むと定着します':'間違えた問題は「今日の5問」に優先して出ます'}</p>`+
+   `<p class="muted">経験値 +${L.gain}${first?'（初回修了ボーナス込み）':''}　連続 ${S.streak.count}日</p>`+
+   (got.length?`<p>${got.map(g=>`<span class="badge">${g}</span>`).join('')}</p><p class="muted">新しい称号を獲得しました</p>`:'')+
+   `<p style="margin-top:22px">`+(L.mode==='lesson'&&nx?`<button class="btn wide" onclick="openLesson('${nx.id}')">つぎのレッスン「${nx.title}」</button></p><p>`:'')+
+   `<button class="btn ghost wide" onclick="closeSheet()">とじる</button></p></div>`);
+}
+function startDaily(){
+  let pool=ALL.filter(l=>S.done[l.id]);if(!pool.length)pool=[ALL[0]];
+  let items=pool.flatMap(l=>l.quiz.map((q,k)=>({q,id:l.id+'-'+k})));
+  items=shuffle(items).sort((a,b)=>(S.wrong[b.id]||0)-(S.wrong[a.id]||0));
+  const w=items.filter(x=>S.wrong[x.id]).slice(0,3),rest=shuffle(items.filter(x=>!w.includes(x)));
+  L={mode:'daily',qs:shuffle(w.concat(rest).slice(0,5)),qi:0,ok:0,gain:0,title:'今日の5問'};showQ();
+}
+
+/* ===================== 品種図鑑 ===================== */
+let zf='all';
+function bar(label,v,cls){let s='';for(let i=1;i<=5;i++)s+=`<i class="${i<=v?(cls||'f'):''}"></i>`;return `<div class="bar"><span>${label}</span>${s}</div>`;}
+function rZukan(){
+  const dr=drunkIds(),cnt={};S.logs.forEach(l=>(l.grapes||[]).forEach(g=>cnt[g]=(cnt[g]||0)+1));
+  let h=head()+`<p class="muted" style="margin:0 0 10px">飲んだワインをログに残すと、その品種にスタンプが付きます。${dr.size} / ${GRAPES.length} 品種を体験済み。</p>`+
+   `<div class="seg">${[['all','すべて'],['r','黒ぶどう'],['w','白ぶどう']].map(x=>`<button class="${zf===x[0]?'on':''}" onclick="zf='${x[0]}';rZukan()">${x[1]}</button>`).join('')}</div><div class="grid">`;
+  GRAPES.filter(g=>zf==='all'||g.c===zf).forEach(g=>{
+    h+=`<button class="gr ${g.c}${dr.has(g.id)?'':' no'}" onclick="openGrape('${g.id}')"><b>${g.n}</b><small>${g.en}</small><small style="margin-top:4px;padding-right:${dr.has(g.id)?40:0}px">${g.ar.split('、').slice(0,2).join('、')}</small>${dr.has(g.id)?`<span class="stamp">飲んだ<br>${cnt[g.id]}本</span>`:''}</button>`;});
+  $('#app').innerHTML=h+`</div>`;
+}
+function openGrape(id){const g=GMAP[id],logs=S.logs.filter(l=>(l.grapes||[]).includes(id));
+  let h=`<div class="shtop"><button class="x" onclick="closeSheet()">とじる</button></div><p class="muted">${g.c==='r'?'黒ぶどう':'白ぶどう'}　${g.en}</p><h2 style="font-size:24px;margin-bottom:8px">${g.n}</h2><p>${g.nt}</p>`+
+   `<div class="sec"><h3>典型的な味わい</h3><div class="bars">${bar('ボディ',g.body)}${bar('酸味',g.acid)}${g.c==='r'?bar('渋み',g.tannin):''}</div><dl class="kv"><dt>香りの手がかり</dt><dd>${g.ar}</dd><dt>代表的な産地</dt><dd>${g.rg}</dd></dl></div>`;
+  h+=`<div class="sec"><h3>あなたの記録</h3>`+(logs.length?logs.map(l=>`<button class="ls" onclick="openLog('${l.id}')"><span><b>${esc(l.name)}</b><small>${esc(l.date||'')}　${'★'.repeat(l.rating||0)}</small></span></button>`).join(''):`<p class="muted" style="margin:0">まだ飲んでいません。見かけたら試して、典型と比べてみましょう。</p>`)+`</div>`;
+  openSheet(h);
+}
+
+/* ===================== ログ ===================== */
+let lf='all',lq='';
+function rLog(){
+  let h=head();
+  if(!S.logs.length){h+=`<div class="empty"><h3>最初の一本を記録しましょう</h3><p>名前と評価だけでも残せます。味わいを書き留めると、「きろく」で好みの傾向が見えてきます。</p><button class="btn" onclick="editLog()">ワインを記録する</button></div>`;$('#app').innerHTML=h;return;}
+  h+=`<input class="search" type="search" placeholder="名前、産地、メモで探す" value="${esc(lq)}" oninput="lq=this.value;listLogs()">`+
+   `<div class="chips"><button class="chip ${lf==='all'?'on':''}" onclick="lf='all';rLog()">すべて</button>${TYPES.map(t=>`<button class="chip ${lf===t[0]?'on':''}" onclick="lf='${t[0]}';rLog()">${t[1]}</button>`).join('')}</div><div id="ll"></div><button class="fab" onclick="editLog()">＋ 記録する</button>`;
+  $('#app').innerHTML=h;listLogs();
+}
+function listLogs(){
+  const q=lq.trim().toLowerCase();
+  const ls=S.logs.filter(l=>(lf==='all'||l.type===lf)&&(!q||[l.name,l.country,l.region,l.memo,l.shop,l.grapeOther].concat((l.grapes||[]).map(g=>GMAP[g]?GMAP[g].n:'')).join(' ').toLowerCase().includes(q)))
+    .sort((a,b)=>(b.date||'').localeCompare(a.date||'')||b.id.localeCompare(a.id));
+  $('#ll').innerHTML=ls.length?ls.map(l=>{const t=TMAP[l.type]||TYPES[0];
+    return `<button class="lg" onclick="openLog('${l.id}')"><span class="ty" style="background:${t[2]}"></span><span style="min-width:0"><b>${esc(l.name)}${l.vintage?' '+esc(l.vintage):''}</b><small>${esc([t[1],l.country,l.region].filter(Boolean).join('　'))}</small><small>${esc(l.date||'')}${l.again?'　また飲みたい':''}</small></span><span class="st" style="margin-left:auto;flex:none">${'★'.repeat(l.rating||0)}</span></button>`;}).join(''):`<p class="empty">条件に合う記録がありません。</p>`;
+}
+let F=null;
+function editLog(id){
+  const o=id?S.logs.find(l=>l.id===id):null;
+  F=o?JSON.parse(JSON.stringify(o)):{id:'w'+Date.now(),name:'',date:today(),type:'red',country:'',region:'',grapes:[],grapeOther:'',vintage:'',price:'',shop:'',rating:0,sweet:1,acid:3,tannin:3,body:3,aromas:[],memo:'',again:false,hasPhoto:false};
+  F._new=!o;F._photo=undefined;
+  const sl=(k,lab,lo,hi)=>`<div class="sl"><span>${lab}</span><input type="range" min="1" max="5" step="1" value="${F[k]}" oninput="F.${k}=+this.value" aria-label="${lab}"><em>${lo}↔${hi}</em></div>`;
+  openSheet(`<div class="shtop"><button class="x" onclick="closeSheet()">やめる</button><h2 style="font-size:18px;flex:1;text-align:center">${o?'記録を直す':'ワインを記録する'}</h2><span style="width:3em"></span></div>`+
+  `<label class="f" for="fn">ワインの名前（必須）</label><input class="in" id="fn" value="${esc(F.name)}" placeholder="例：シャブリ、ラベルの大きな文字">`+
+  `<label class="f">種類</label><div class="chips" id="fty">${TYPES.map(t=>`<button class="chip ${F.type===t[0]?'on':''}" onclick="F.type='${t[0]}';pick(this)">${t[1]}</button>`).join('')}</div>`+
+  `<label class="f">評価</label><div class="stars" id="fst">${[1,2,3,4,5].map(i=>`<button class="${i<=F.rating?'on':''}" aria-label="星${i}" onclick="star(${i})">★</button>`).join('')}</div>`+
+  `<div class="row2"><div><label class="f" for="fd">飲んだ日</label><input class="in" id="fd" type="date" value="${esc(F.date)}"></div><div><label class="f" for="fv">ヴィンテージ</label><input class="in" id="fv" inputmode="numeric" value="${esc(F.vintage)}" placeholder="例：2021"></div></div>`+
+  `<div class="row2"><div><label class="f" for="fc">国</label><select class="in" id="fc"><option value="">選ぶ</option>${COUNTRIES.map(c=>`<option ${F.country===c?'selected':''}>${c}</option>`).join('')}</select></div><div><label class="f" for="fr">産地</label><input class="in" id="fr" value="${esc(F.region)}" placeholder="例：ブルゴーニュ"></div></div>`+
+  `<label class="f">品種（複数選べます。図鑑にスタンプが付きます）</label><div class="chips">${GRAPES.map(g=>`<button class="chip ${F.grapes.includes(g.id)?'on':''}" onclick="tg(this,'grapes','${g.id}')">${g.n}</button>`).join('')}</div><input class="in" id="fg" value="${esc(F.grapeOther)}" placeholder="その他の品種">`+
+  `<label class="f">味わい</label>${sl('sweet','甘み','辛口','甘口')}${sl('acid','酸味','穏やか','鋭い')}${sl('tannin','渋み','弱い','強い')}${sl('body','ボディ','軽い','重い')}`+
+  `<label class="f">感じた香り</label><div class="chips">${AROMAS.map(a=>`<button class="chip ${F.aromas.includes(a)?'on':''}" onclick="tg(this,'aromas','${a}')">${a}</button>`).join('')}</div>`+
+  `<div class="row2"><div><label class="f" for="fp">価格（円）</label><input class="in" id="fp" inputmode="numeric" value="${esc(F.price)}"></div><div><label class="f" for="fs">買った店・飲んだ店</label><input class="in" id="fs" value="${esc(F.shop)}"></div></div>`+
+  `<label class="f" for="fm">メモ</label><textarea class="in" id="fm" placeholder="合わせた料理、一緒に飲んだ人、印象">${esc(F.memo)}</textarea>`+
+  `<label class="f" for="ff">ラベルの写真</label><input class="in" id="ff" type="file" accept="image/*" onchange="photo(this)"><div id="fpv" style="margin-top:8px"></div>`+
+  `<label class="f"><input type="checkbox" id="fa" ${F.again?'checked':''}> また飲みたい</label>`+
+  `<p style="margin-top:18px"><button class="btn wide" onclick="saveLog()">保存する</button></p>`+
+  (o?`<p style="text-align:center"><button class="linkb" style="color:var(--ng)" onclick="delLog('${o.id}')">この記録を削除する</button></p>`:''));
+  if(F.hasPhoto)pGet(F.id).then(p=>{if(p&&$('#fpv'))$('#fpv').innerHTML=`<img class="photo" src="${p}" alt="ラベルの写真">`;});
+}
+function pick(b){b.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('on'));b.classList.add('on');}
+function tg(b,k,v){const i=F[k].indexOf(v);if(i>=0)F[k].splice(i,1);else F[k].push(v);b.classList.toggle('on');}
+function star(n){F.rating=F.rating===n?0:n;document.querySelectorAll('#fst button').forEach((b,i)=>b.classList.toggle('on',i<F.rating));}
+function photo(inp){const f=inp.files[0];if(!f)return;shrink(f).then(d=>{F._photo=d;$('#fpv').innerHTML=`<img class="photo" src="${d}" alt="ラベルの写真">`;}).catch(()=>toast('写真を読み込めませんでした。別の画像を選んでください'));}
+async function saveLog(){
+  F.name=$('#fn').value.trim();if(!F.name){toast('ワインの名前を入れてください');$('#fn').focus();return;}
+  F.date=$('#fd').value;F.vintage=$('#fv').value.trim();F.country=$('#fc').value;F.region=$('#fr').value.trim();F.grapeOther=$('#fg').value.trim();F.price=$('#fp').value.trim();F.shop=$('#fs').value.trim();F.memo=$('#fm').value.trim();F.again=$('#fa').checked;
+  if(F._photo){try{await pPut(F.id,F._photo);F.hasPhoto=true;}catch(e){toast('写真は保存できませんでした。文字の記録は保存します');}}
+  const isNew=F._new;delete F._new;delete F._photo;
+  const i=S.logs.findIndex(l=>l.id===F.id);if(i>=0)S.logs[i]=F;else{S.logs.push(F);S.xp+=15;}
+  touchStreak();const got=checkBadges();save();
+  const id=F.id;openLog(id);
+  toast(got.length?'称号を獲得：'+got.join('、'):isNew?'保存しました　経験値 +15':'保存しました');
+}
+function delLog(id){if(!confirm('この記録を削除します。元に戻せません。'))return;S.logs=S.logs.filter(l=>l.id!==id);pDel(id);save();closeSheet();toast('削除しました');}
+function openLog(id){const l=S.logs.find(x=>x.id===id);if(!l){closeSheet();return;}const t=TMAP[l.type]||TYPES[0];
+  const gs=(l.grapes||[]).map(g=>GMAP[g]).filter(Boolean);
+  let h=`<div class="shtop"><button class="x" onclick="closeSheet()">とじる</button><span style="flex:1"></span><button class="x" onclick="editLog('${l.id}')">直す</button></div><div id="ph"></div>`+
+   `<p class="muted">${esc([t[1],l.country,l.region].filter(Boolean).join('　'))}</p><h2 style="font-size:23px">${esc(l.name)}${l.vintage?' '+esc(l.vintage):''}</h2>`+
+   `<p style="color:var(--gold);font-size:20px;letter-spacing:2px;margin:4px 0">${'★'.repeat(l.rating||0)}<span style="color:var(--line)">${'★'.repeat(5-(l.rating||0))}</span></p>`+
+   `<div class="sec"><h3>あなたの感じ方</h3><div class="bars">${bar('甘み',l.sweet,'g')}${bar('酸味',l.acid,'g')}${bar('渋み',l.tannin,'g')}${bar('ボディ',l.body,'g')}</div>${l.aromas&&l.aromas.length?`<p style="margin:8px 0 0">${l.aromas.map(a=>`<span class="chip" style="display:inline-block;margin:2px">${a}</span>`).join('')}</p>`:''}</div>`;
+  gs.forEach(g=>{const d=[];
+    if(Math.abs(l.acid-g.acid)>=2)d.push(`酸味は典型より${l.acid>g.acid?'強く':'穏やかに'}感じています`);
+    if(g.c==='r'&&Math.abs(l.tannin-g.tannin)>=2)d.push(`渋みは典型より${l.tannin>g.tannin?'強く':'弱く'}感じています`);
+    if(Math.abs(l.body-g.body)>=2)d.push(`ボディは典型より${l.body>g.body?'重く':'軽く'}感じています`);
+    h+=`<div class="sec"><h3>${g.n}の典型と比べる</h3><div class="bars">${bar('酸味',g.acid)}${g.c==='r'?bar('渋み',g.tannin):''}${bar('ボディ',g.body)}</div><p class="muted" style="margin:6px 0">${d.length?d.join('。')+'。産地の気候、造り方、熟成の違いが理由かもしれません。':'教科書どおりの味わいとして感じられています。'}</p><button class="linkb" onclick="openGrape('${g.id}')">図鑑で${g.n}を見る</button></div>`;});
+  const kv=[['飲んだ日',l.date],['品種',gs.map(g=>g.n).concat(l.grapeOther?[l.grapeOther]:[]).join('、')],['価格',l.price?Number(l.price).toLocaleString()+'円':''],['店',l.shop],['メモ',l.memo]].filter(x=>x[1]);
+  if(kv.length)h+=`<div class="sec"><dl class="kv" style="margin:0">${kv.map(x=>`<dt>${x[0]}</dt><dd style="white-space:pre-wrap">${esc(x[1])}</dd>`).join('')}</dl>${l.again?'<p style="margin:10px 0 0"><span class="badge">また飲みたい</span></p>':''}</div>`;
+  openSheet(h);
+  if(l.hasPhoto)pGet(l.id).then(p=>{if(p&&$('#ph'))$('#ph').innerHTML=`<img class="photo" src="${p}" alt="ラベルの写真">`;});
+}
+
+/* ===================== きろく ===================== */
+function taste(){
+  const fav=S.logs.filter(l=>l.rating>=4);if(fav.length<3)return null;
+  const av=k=>fav.reduce((s,l)=>s+(l[k]||3),0)/fav.length;
+  const p={sweet:av('sweet'),acid:av('acid'),tannin:av('tannin'),body:av('body')};
+  const tc={};fav.forEach(l=>tc[l.type]=(tc[l.type]||0)+1);const ft=Object.keys(tc).sort((a,b)=>tc[b]-tc[a])[0];
+  const w=[];w.push(p.body>=3.7?'重めでコクのある':p.body<=2.3?'軽やかな':'中くらいの重さの');
+  if(p.acid>=3.7)w.push('酸のしっかりした');else if(p.acid<=2.3)w.push('酸の穏やかな');
+  if(ft==='red'){if(p.tannin>=3.7)w.push('渋みの強い');else if(p.tannin<=2.3)w.push('渋みの少ない');}
+  if(p.sweet>=3)w.push('甘みのある');
+  const col=ft==='red'?'r':(ft==='white'||ft==='spark'||ft==='orange')?'w':null;const dr=drunkIds();
+  const rec=GRAPES.filter(g=>!dr.has(g.id)&&(!col||g.c===col)).map(g=>({g,d:Math.abs(g.acid-p.acid)+Math.abs(g.body-p.body)+(g.c==='r'?Math.abs(g.tannin-p.tannin):0)})).sort((a,b)=>a.d-b.d).slice(0,3).map(x=>x.g);
+  return{n:fav.length,text:w.join('、')+(TMAP[ft]?TMAP[ft][1]:'')+'ワイン',p,rec};
+}
+function rMe(){
+  const l=level(),t=taste(),pct=l.next?Math.round((S.xp-l.cur)/(l.next-l.cur)*100):100;
+  let h=head()+`<div class="sec"><h3>Lv.${l.i+1}　${l.name}</h3><div class="xp"><i style="width:${pct}%"></i></div><p class="muted" style="margin:0">経験値 ${S.xp}${l.next?`　つぎの段位まで あと${l.next-S.xp}`:'　最高段位です'}</p>`+
+   `<div class="stat" style="margin-top:12px"><div><b>${nDone()}</b><small>修了レッスン</small></div><div><b>${S.logs.length}</b><small>記録した本数</small></div><div><b>${S.streak.last===today()||S.streak.last===new Date(Date.now()-864e5).toLocaleDateString('sv')?S.streak.count:0}</b><small>連続日数</small></div></div></div>`;
+  h+=`<div class="sec"><h3>あなたの好み</h3>`+(t?`<p style="margin:0 0 6px">星4つ以上を付けた${t.n}本から見ると、<b style="color:var(--wine)">${t.text}</b>がお好みのようです。</p><div class="bars">${bar('甘み',Math.round(t.p.sweet),'g')}${bar('酸味',Math.round(t.p.acid),'g')}${bar('渋み',Math.round(t.p.tannin),'g')}${bar('ボディ',Math.round(t.p.body),'g')}</div>`+
+    (t.rec.length?`<p class="muted" style="margin:10px 0 4px">まだ飲んでいない品種から、好みに近い順</p>${t.rec.map(g=>`<button class="ls" onclick="openGrape('${g.id}')"><span><b>${g.n}</b><small>${g.rg}</small></span></button>`).join('')}`:''):`<p class="muted" style="margin:0">星4つ以上の記録が3本たまると、味わいの傾向と、次に試したい品種を表示します。</p>`)+`</div>`;
+  if(S.logs.length){const tc={},cc={};S.logs.forEach(x=>{tc[x.type]=(tc[x.type]||0)+1;if(x.country)cc[x.country]=(cc[x.country]||0)+1;});const mx=Math.max(...Object.values(tc));
+    h+=`<div class="sec"><h3>飲んだワインの内訳</h3>${TYPES.filter(x=>tc[x[0]]).map(x=>`<div class="bar"><span style="width:7.5em">${x[1]}</span><i style="flex:${tc[x[0]]/mx};background:${x[2]}"></i><i style="flex:${1-tc[x[0]]/mx};background:none"></i><span style="width:2.5em;text-align:right">${tc[x[0]]}本</span></div>`).join('')}`+
+     `<p class="muted" style="margin:10px 0 0">${Object.keys(cc).sort((a,b)=>cc[b]-cc[a]).map(c=>`${c} ${cc[c]}`).join('　')||'国は未記録'}</p><p class="muted" style="margin:4px 0 0">体験した品種 ${drunkIds().size} / ${GRAPES.length}</p></div>`;}
+  h+=`<div class="sec"><h3>称号</h3><p style="margin:0">${BADGES.map(b=>`<span class="badge ${S.badges[b[0]]?'':'off'}">${b[1]}</span>`).join('')}</p></div>`;
+  h+=`<div class="sec"><h3>データの控え</h3><p class="muted" style="margin:0 0 10px">記録はこの端末の中だけに保存されます。機種変更の前や、ときどきの控えとしてファイルに書き出してください。</p><button class="btn ghost" onclick="exportData()">ファイルに書き出す</button> <button class="btn ghost" onclick="$('#imp').click()">ファイルから戻す</button><input id="imp" type="file" accept="application/json,.json" hidden onchange="importData(this)"></div>`;
+  $('#app').innerHTML=h;
+}
+async function exportData(){
+  const photos={};for(const l of S.logs){if(l.hasPhoto){const p=await pGet(l.id);if(p)photos[l.id]=p;}}
+  const blob=new Blob([JSON.stringify({app:'winecho',v:1,at:new Date().toISOString(),state:S,photos})],{type:'application/json'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='winecho-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),4000);toast('書き出しました');
+}
+function importData(inp){const f=inp.files[0];if(!f)return;const fr=new FileReader();fr.onload=async()=>{try{const d=JSON.parse(fr.result);if(d.app!=='winecho'||!d.state||!Array.isArray(d.state.logs))throw 0;
+  if(!confirm('いまの記録を、ファイルの内容（'+d.state.logs.length+'本）で置き換えます。'))return;
+  S=Object.assign({xp:0,done:{},wrong:{},logs:[],streak:{last:'',count:0},badges:{},daily:''},d.state);save();
+  for(const k in (d.photos||{})){try{await pPut(k,d.photos[k]);}catch(e){}}
+  render();toast('戻しました');}catch(e){toast('ワイン帖の控えファイルではないようです');}};fr.readAsText(f);inp.value='';}
+
+go('learn');
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}));}
+</script>
+</body>
+</html>
